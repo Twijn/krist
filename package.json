@@ -1,0 +1,27 @@
+{
+  "name": "krist",
+  "version": "1.0.0",
+  "description": "Contains various Krist libraries or services. The chances of anything here actually being publicly shared is effectively zero",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Twijn/krist.git"
+  },
+  "author": "Twijn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Twijn/krist/issues"
+  },
+  "homepage": "https://github.com/Twijn/krist#readme",
+  "dependencies": {
+    "bootstrap": "^5.2.1",
+    "cookie-parser": "^1.4.6",
+    "ejs": "^3.1.8",
+    "express": "^4.18.1",
+    "mysql": "^2.18.1",
+    "ws": "^8.8.1"
+  }
+}
