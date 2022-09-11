@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include("../partials/head", {title: "Shop: " + shop.name}); %>
+</head>
+<body>
+    <main role="main" class="container">
+        <div class="row mt-5">
+            <h1 class="col-10">
+                <%= shop.name %>
+            </h1>
+            <div class="col-2">
+                <div class="gap-2 float-end">
+                    <button type="button" name="item-add-cart" id="item-add-cart" class="btn btn-primary"><i class="fa-duotone fa-cart-shopping"></i>&nbsp; View Cart</button>
+                </div>
+            </div>
+        </div>
+        <p class="lead">
+            <code>krist.store</code> registered shop on <code><%= shop.server %></code>
+        </p>
+        <% if (shop.status === "active") { %>
+        <div class="alert alert-success" role="alert">
+            <strong>This shop is active!</strong> You should feel confident while purchasing items utilizing the below addresses or via the <code>krist.store</code> cart.
+        </div>
+        <% } else if (shop.status === "inactive") { %>
+        <div class="alert alert-warning" role="alert">
+            <strong>This shop is connected but hasn't responded in a while.</strong> Use caution when purchasing items from this shop.
+        </div>
+        <% } else if (shop.status === "offline") { %>
+        <div class="alert alert-danger" role="alert">
+            <strong>This shop is offline.</strong> Do not purchase items from this shop.
+        </div>
+        <% } %>
+        <h3>
+            Items Listed
+        </h3>
+        <table class="table align-middle mb-0 bg-white">
+            <thead class="bg-light">
+                <tr>
+                    <th>Item Name</th>
+                    <th class="text-end">Stock</th>
+                    <th class="text-end">Item Price</th>
+                    <th class="text-end">Meta Address</th>
+                    <th class="text-end">Add to Cart</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% items.forEach(function(item) { %>
+                    <tr>
+                        <td title="<%= item.dictionaryName %>"><%= item.displayName %></td>
+                        <td class="text-end"><%= item.count %></td>
+                        <td class="text-end"><%= item.price.toFixed(3) %> kst/ea.</td>
+                        <td class="text-end"><code><%= item.meta %>@<%= shop.kristName %></code></td>
+                        <td>
+                            <div class="gap-2 float-end">
+                                <button type="button" name="item-add-cart" id="item-add-cart" class="btn btn-outline-primary" aria-label="Add to Cart"><i class="fa-duotone fa-cart-plus"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </main>
+    <%- include("../partials/footer"); %>
+    <script>
+        const shopId = "<%= shop.id %>";
+    </script>
+    <script src="/assets/js/cart.js"> </script>
+</body>
+</html>

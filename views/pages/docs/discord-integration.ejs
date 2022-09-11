@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include("../../partials/head", {title: "Discord Integration"}); %>
+</head>
+<body>
+    <main role="main" class="container">
+        <h1 class="mt-5">
+            Discord Integration
+        </h1>
+        <p class="lead">
+            Enabling discord integration for <code>krist.store</code> shopfront software.
+        </p>
+        <h3>
+            Generating a CC:D token
+        </h3>
+        <ol>
+            <li>Join the CC:D Discord guild <a href="https://cc-d.twijn.dev/discord">here</a>. <span class="text-muted">Note: you may also join any guild with the discord bot present, or invite it to your own!</span></li>
+            <li>Using any channel, execute the <code>/token create</code> command</li>
+            <ul>
+                <li>In the generated embed, the <strong>private token</strong> is the token utilized by krist.store to send messages to the CC:D websocket. Keep this secret!</li>
+                <li>The <strong>public token</strong> field is a derived hash of your private token. Utilize this to share to other users or for your own utilization with the <code>/token authorize</code> command to authorize that token to send messages to other users or channels.</li>
+            </ul>
+            <li>Utilizing the generated token, navigate to the <code>CC:D Settings</code> page within the shop settings.</li>
+        </ol>
+        <div class="row mt-3">
+            <div class="col-lg-6">
+                <img class="img-fluid rounded mx-auto d-block" src="/assets/images/docs_cc-d_createToken.png" alt="discord prompt with cc:d generated token">
+            </div>
+            <div class="col-lg-6">
+                <img class="img-fluid rounded mx-auto d-block" src="/assets/images/docs_cc-d_discordSettings.png" alt="krist.store shop discord page">
+            </div>
+        </div>
+    </main>
+    <%- include("../../partials/footer"); %>
+</body>
+</html>
