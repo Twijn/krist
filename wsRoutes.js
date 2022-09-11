@@ -18,14 +18,14 @@ module.exports = {
             if (msg.kristAddress.length > 64)
                 reply({ok: false, error: "kristAddress length must be < 65 characters"});
 
-            con.query("update shop set name = ?, server = ?, kristName = ?, kristAddress = ? where id = ?;", [msg.name, msg.server, msg.kristName, msg.kristAddress, socket.id], err => {
+            con.query("update shop set name = ?, server = ?, kristName = ?, kristAddress = ?, map = ?, x = ?, y = ?, z = ? where id = ?;", [msg.name, msg.server, msg.kristName, msg.kristAddress, msg.map, msg.x, msg.y, msg.z, socket.id], err => {
                 if (err) {
                     console.error(err)
                     reply({ok: false, error: "SQL error occurred"})
                     return;
                 }
 
-                reply({ok: true, info: {name: msg.name, server: msg.server, krist: {name: msg.kristName, address: msg.kristAddress}}})
+                reply({ok: true, info: {name: msg.name, server: msg.server, krist: {name: msg.kristName, address: msg.kristAddress}, location: {map: msg.map, x: msg.x, y: msg.y, z: msg.z}}})
             });
         } else {
             reply({ok: false, error: "Invalid parameters, expected [name, server, kristName, kristAddress]"})

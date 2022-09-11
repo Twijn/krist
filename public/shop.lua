@@ -10,6 +10,9 @@ local config = {
         name = "Krist.Store Shopfront",
         server = "Singleplayer",
     },
+    location = {
+        map = "https://dynmap.switchcraft.pw/?zoom=8&x={x}&y={y}&z={z}",
+    },
     krist = {
         privateKey = "<krist priv key>",
         kristWallet = true,
@@ -62,8 +65,8 @@ local config = {
         items = {},
     },
 }
-local items = {}
 
+local items = {}
 
 local configName = "shop.conf"
 local itemsName = ".items"
@@ -112,6 +115,20 @@ end
 
 if not fs.exists("kstore.lua") then
     shell.run("wget", appHTTP..APP_DOMAIN.."/kstore.lua")
+end
+
+if config.location.x == nil then
+    print("Attempting to locate shop...")
+    local x,y,z = gps.locate()
+    if x then
+        print(x,y,z)
+        config.location.x = x
+        config.location.y = y
+        config.location.z = z
+        saveConfig()
+    else
+        print("Unable to locate shop")
+    end
 end
 
 local function drawCenter(text)
@@ -753,7 +770,7 @@ end
 k.on("e_ready", function()
     print("kStore API ready")
 
-    local success, obj = e.updateShopInfo(config.shop.name, config.shop.server, config.krist.name, config.krist.address)
+    local success, obj = e.updateShopInfo(config.shop.name, config.shop.server, config.krist.name, config.krist.address, config.location.map, config.location.x, config.location.y, config.location.z)
 
     if not success then print(obj.error) sleep(3) end
 
@@ -1060,7 +1077,7 @@ local actions = {
                 config.shop.name = formData.name
                 config.shop.server = formData.server
                 saveConfig()
-                local s, obj = e.updateShopInfo(config.shop.name, config.shop.server, config.krist.name, config.krist.address)
+                local s, obj = e.updateShopInfo(config.shop.name, config.shop.server, config.krist.name, config.krist.address, config.location.map, config.location.x, config.location.y, config.location.z)
                 if not s then
                     term.clear()
                     middle(-1)

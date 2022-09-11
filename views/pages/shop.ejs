@@ -17,6 +17,8 @@
         </div>
         <p class="lead">
             <code>krist.store</code> registered shop on <code><%= shop.server %></code>
+            <% if (shop.coordinates) { %> at <code><%= shop.coordinates %></code>.<% } %>
+            <% if (shop.map) { %><a href="<%= shop.map %>">View on Map</a><% } %>
         </p>
         <% if (shop.status === "active") { %>
         <div class="alert alert-success" role="alert">

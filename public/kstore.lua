@@ -133,8 +133,15 @@ function KStore.new(privateKey, domain, protocol)
         parallel.waitForAny(function() listen(_)end, function() relay(_)end, function() keepAlive(_)end)
     end
 
-    function _.updateShopInfo(name, server, kristName, kristAddress)
-        local resp = _.send("shopInfo", {name = name, server = server, kristName = kristName, kristAddress = kristAddress})
+    function _.updateShopInfo(name, server, kristName, kristAddress, map, x, y, z)
+        -- If one set of values is invalid, disregard all of them
+        if x == nil or y == nil or z == nil then
+            map = nil
+            x = nil
+            y = nil
+            z = nil
+        end
+        local resp = _.send("shopInfo", {name = name, server = server, kristName = kristName, kristAddress = kristAddress, map = map, x = x, y = y, z = z})
         return resp.ok, resp
     end
 

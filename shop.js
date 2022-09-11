@@ -3,7 +3,7 @@ const router = express.Router();
 const con = require("./database");
 
 router.get("/:id", (req, res, next) => {
-    con.query("select id, name, server, kristName, kristAddress from shop where id = ?;", [req.params.id], async (err, result) => {
+    con.query("select id, name, server, kristName, kristAddress, map, x, y, z from shop where id = ?;", [req.params.id], async (err, result) => {
         if (err) console.error(err);
 
         if (result.length === 0) return next();
@@ -22,6 +22,17 @@ router.get("/:id", (req, res, next) => {
                 shop.status = "inactive";
             }
         });
+
+        shop.coordinates = null;
+        if (shop.x && shop.y && shop.z) {
+            shop.coordinates = shop.x + ", " + shop.y + ", " + shop.z;
+        }
+
+        if (shop.x && shop.y && shop.z && shop.map) {
+            shop.map = shop.map.replace("{x}", shop.x).replace("{y}", shop.y).replace("{z}", shop.z);
+        } else {
+            shop.map = null;
+        }
 
         res.render("pages/shop", {
             shop: shop,
