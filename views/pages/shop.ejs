@@ -18,7 +18,7 @@
         <p class="lead">
             <code>krist.store</code> registered shop on <code><%= shop.server %></code>
             <% if (shop.coordinates) { %> at <code><%= shop.coordinates %></code>.<% } %>
-            <% if (shop.map) { %><a href="<%= shop.map %>">View on Map</a><% } %>
+            <% if (shop.map) { %><a href="<%= shop.map %>" target="__blank">View on Map</a><% } %>
         </p>
         <% if (shop.status === "active") { %>
         <div class="alert alert-success" role="alert">
@@ -47,19 +47,31 @@
                 </tr>
             </thead>
             <tbody>
-                <% items.forEach(function(item) { %>
+                <% if (items && items.length === 0) { %>
                     <tr>
+                        <td colspan="5" class="text-muted text-center"><i>No items have been added to this shop yet!</i></td>
+                    </tr>
+                <% } else { %>
+                <% items.forEach(function(item) { %>
+                    <tr class="item" id="item-<%= item.name %>-<%= item.nbt %>" data-name="<%= item.name %>" data-nbt="<%= item.nbt %>" data-displayName="<%= item.displayName %>" data-price="<%= item.price %>" data-meta="<%= item.meta %>" data-stock="<%= item.count %>">
                         <td title="<%= item.dictionaryName %>"><%= item.displayName %></td>
                         <td class="text-end"><%= item.count %></td>
                         <td class="text-end"><%= item.price.toFixed(3) %> kst/ea.</td>
                         <td class="text-end"><code><%= item.meta %>@<%= shop.kristName %></code></td>
                         <td>
-                            <div class="gap-2 float-end">
-                                <button type="button" name="item-add-cart" id="item-add-cart" class="btn btn-outline-primary" aria-label="Add to Cart"><i class="fa-duotone fa-cart-plus"></i></button>
+                            <div class="gap-2 float-end add-item">
+                                <button type="button" name="item-add-cart" class="btn btn-outline-primary item-add-cart" aria-label="Add to Cart"><i class="fa-duotone fa-cart-plus"></i></button>
+                            </div>
+                            <div class="gap-2 float-end edit-item" style="display:none;">
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary item-remove-cart form-control" aria-label="Remove one"><i class="fa-regular fa-minus"></i></button>
+                                    <input type="number" name="item-count" class="item-count form-control" min="0" max="<%= item.count %>">
+                                    <button class="btn btn-outline-secondary item-add-cart form-control" aria-label="Add one"><i class="fa-regular fa-plus"></i></button>
+                                </div>
                             </div>
                         </td>
                     </tr>
-                <% }) %>
+                <% }) } %>
             </tbody>
         </table>
     </main>
