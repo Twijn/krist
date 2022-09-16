@@ -55,15 +55,19 @@ module.exports = {
                     return;
                 }
                 
-                msg.items.forEach(item => {
-                    if (!item.hasOwnProperty("nbt")) item.nbt = "";
-                    if (item.hasOwnProperty("name") && item.hasOwnProperty("nbt") && item.hasOwnProperty("displayName") && item.hasOwnProperty("price") && item.hasOwnProperty("meta") && item.hasOwnProperty("count")) {
-                        con.query("insert into item (shop_id, name, nbt, displayName, price, meta, count) values (?, ?, ?, ?, ?, ?, ?);", [socket.id, item.name, item.nbt, item.displayName, item.price, item.meta, item.count], err => {
-                            if (err) console.error(err);
-                        });
-                    }
-                });
-                reply({ok: true});
+                try {
+                    msg.items.forEach(item => {
+                        if (!item.hasOwnProperty("nbt")) item.nbt = "";
+                        if (item.hasOwnProperty("name") && item.hasOwnProperty("nbt") && item.hasOwnProperty("displayName") && item.hasOwnProperty("price") && item.hasOwnProperty("meta") && item.hasOwnProperty("count")) {
+                            con.query("insert into item (shop_id, name, nbt, displayName, price, meta, count, order) values (?, ?, ?, ?, ?, ?, ?, ?);", [socket.id, item.name, item.nbt, item.displayName, item.price, item.meta, item.count, item.order], err => {
+                                if (err) console.error(err);
+                            });
+                        }
+                    });
+                    reply({ok: true});
+                } catch (err) {
+                    reply({ok: false, error: "Invalid parameters, expected [items]"})
+                }
             });
         } else {
             reply({ok: false, error: "Invalid parameters, expected [items]"})
