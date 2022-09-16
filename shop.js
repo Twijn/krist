@@ -10,7 +10,7 @@ router.get("/:id", (req, res, next) => {
 
         let shop = result[0];
 
-        const items = await con.pquery("select item.name, item.nbt, item.displayName, item.price, item.meta, item.count, dictionary.displayName as dictionaryName from item left join dictionary on item.shop_id = dictionary.shop_id and item.name = dictionary.name and item.nbt = dictionary.nbt where item.shop_id = ?;", [shop.id]);
+        const items = await con.pquery("select item.name, item.nbt, item.displayName, item.price, item.meta, item.count, dictionary.displayName as dictionaryName from item left join dictionary on item.shop_id = dictionary.shop_id and item.name = dictionary.name and item.nbt = dictionary.nbt where item.shop_id = ? order by item.order asc;", [shop.id]);
 
         let shops = global.sockets.filter(x => x.id.toLowerCase() === shop.id.toLowerCase());
         shop.status = "offline";
