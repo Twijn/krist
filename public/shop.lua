@@ -60,6 +60,7 @@ local config = {
         admin = "<user ID>",
     },
     forSale = {},
+    forSaleOrder = {},
     reserved = {
         chests = {},
         items = {},
@@ -157,7 +158,7 @@ local formValidate = {
         allowedChars = {"0","1","2","3","4","5","6","7","8","9"},
         error = "snowflake required",
         func = function(x)
-            return type(x) == "string" and not (x == "" or x:find("%D"))
+            return type(x) == "string" and not x:find("%D")
         end
     },
     positiveInteger = {
@@ -235,16 +236,6 @@ local formValidate = {
         end
     },
 }
-
---[[
-    layout example
-    {
-        label = "Display Label",
-        name = "internalName",
-        validate = validate option from above,
-        default = "optional default value",
-    }
-]]
 local function form(layout, title)
     local w,h = term.getSize()
     local selected = 1
@@ -362,6 +353,27 @@ local function form(layout, title)
                     term.write(data[layout[selected].name] .. string.rep(" ", w-2-#data[layout[selected].name]))
                     term.setCursorPos(2+#data[layout[selected].name],((selected - 1) * 3) + offset + 3)
                 end
+            elseif e == "paste" then
+                local paste = key
+
+                if layout[selected].validate and layout[selected].validate.allowedChars then
+                    paste = ""
+                    for i = 1, #key do
+                        local char = key:sub(i,i)
+                        if table.contains(layout[selected].validate.allowedChars, char) then
+                            paste = paste .. char
+                        end
+                    end
+                end
+
+                if not data[layout[selected].name] then data[layout[selected].name] = "" end
+                data[layout[selected].name] = data[layout[selected].name]..paste
+                
+                term.setBackgroundColor(colors.white)
+                term.setTextColor(colors.black)
+                term.setCursorPos(2,((selected - 1) * 3) + offset + 3)
+                term.write(data[layout[selected].name] .. string.rep(" ", w-2-#data[layout[selected].name]))
+                term.setCursorPos(2+#data[layout[selected].name],((selected - 1) * 3) + offset + 3)
             end
         end
     end
@@ -588,7 +600,8 @@ local mon = {
 
         -- recognize each column width based on row data & form basic rows table
         local rows = {}
-        for i,saleItem in pairs(config.forSale)do
+        for _,i in pairs(config.forSaleOrder)do
+            local saleItem = config.forSale[i]
             local row = {}
             for colNum, col in pairs(columns)do
                 local value = saleItem[col.name]
@@ -739,116 +752,15 @@ local kstoreReady = false
 local kristReady = false
 local ccdReady = false
 
-local function updateItems()
-    local itemsForSale = {}
-    local itemDictionary = {}
-    for i, item in pairs(config.forSale) do
-        table.insert(itemsForSale, {
-            name = items[i].name,
-            nbt = items[i].nbt,
-            displayName = item.displayName,
-            price = item.price,
-            meta = item.meta,
-            count = items[i].count,
-        })
-    end
-
-    for i, item in pairs(items) do
-        table.insert(itemDictionary, {
-            name = item.name,
-            nbt = item.nbt,
-            displayName = item.displayName,
-        })
-    end
-
-    local succ, obj = e.updateForSaleItems(itemsForSale)
-    if not succ then print(obj.error) sleep(3) end
-    succ, obj = e.updateItemDictionary(itemDictionary)
-    if not succ then print(obj.error) sleep(3) end
-end
-
-k.on("e_ready", function()
-    print("kStore API ready")
-
-    local success, obj = e.updateShopInfo(config.shop.name, config.shop.server, config.krist.name, config.krist.address, config.location.map, config.location.x, config.location.y, config.location.z)
-
-    if not success then print(obj.error) sleep(3) end
-
-    kstoreReady = true
-
-    mon:updateLoading("Connection made to kStore API!")
-end)
-
-k.on("k_ready", function()
-    local ok, me, err
-    print("Krist API ready")
-    if PRIVATE_KEY then
-        print("Logging in to Krist")
-        mon:updateLoading("Logging in to Krist")
-        ok, me = k.login(PRIVATE_KEY, config.krist.kristWallet)
-        if not ok then error("error retrieving self: " .. me) end
-        print("Got Krist host account data!")
-        if me.isGuest then
-            mon:updateLoading("Logged in as a guest")
-            print("Logged in as GUEST")
-        else
-            mon:updateLoading("Logged in as "..me.address.address)
-            print("Logged in as " .. me.address.address .. " ("..me.address.balance..")")
-            config.krist.address = me.address.address
-            saveConfig()
-        end
-    else
-        print("Logged in as GUEST")
-    end
-    if not config.krist.address or #config.krist.address == 0 then
-        error("no Krist address was provided, and a private key was missing or failed. please provide a private key or Krist address in "..configName)
-    end
-    if not config.krist.name or #config.krist.name == 0 then
-        local names = k.address.names(config.krist.address)
-        if not names.ok then error("failed when retrieving names: " ..names.error) end
-
-        local selectList = {}
-        for i, name in pairs(names.names)do
-            table.insert(selectList, name.name..".kst")
-        end
-        local name = selectMenu(selectList, "Select the krist domain to use")
-        print("Selected " .. name .. " for shop use")
-        config.krist.name = name
-        saveConfig()
-    end
-    print("Subscribing to all transactions")
-    ok, err = k.subscribe("transactions")
-    if not ok then error("error subscribing to transactions: " .. err) end
-    print("Subscribed!")
-    kristReady = true
-
-    mon:updateLoading("Connection made to Krist!")
-end)
-k.on("ccd_ready", function()
-    print("CC:D API ready")
-    ccdReady = true
-
-    mon:updateLoading("Connection made to CC:D!")
-end)
-
-local function monitorRefresh()
-    print("Waiting for all connections before starting monitor draw...")
-    repeat sleep(0.25) until kstoreReady and kristReady and ((not d) or ccdReady)
-    
-    mon:firstDraw()
-    mon:drawHeader()
-    mon:drawFooter()
-
-    itemScan()
-    updateItems()
-
-    while true do
-        itemScan()
-        mon:drawItems()
-        sleep(10)
-    end
-end
-
+--[[
+    layout example
+    {
+        label = "Display Label",
+        name = "internalName",
+        validate = validate option from above,
+        default = "optional default value",
+    }
+]]
 local formLayouts = {
     newItem = function(displayName, name)
         local find = name:find(":")
@@ -932,6 +844,18 @@ local formLayouts = {
                 },
             }
         end,
+        initialKristData = function()
+            return {
+                {
+                    label = "Private Key",
+                    name = "privateKey",
+                },
+                {
+                    label = "Address",
+                    name = "address",
+                },
+            }
+        end,
         discord = {
             token = function()
                 return {
@@ -971,14 +895,45 @@ local formLayouts = {
     },
 }
 
-local function confirmChange(setting)
-    local selectMenu
-    if setting then
-        selectMenu = selectMenu({"Yes", "No"}, "Vital setting '".. setting .."' changed. Reboot?")
-    else
-        selectMenu = selectMenu({"Yes", "No"}, "Vital setting changed. Reboot?")
+local function updateItems()
+    local itemsForSale = {}
+    local itemDictionary = {}
+    for order, itemName in pairs(config.forSaleOrder) do
+        local item = config.forSale[itemName]
+        local itemDictionary = items[itemName]
+        table.insert(itemsForSale, {
+            name = itemDictionary.name,
+            nbt = itemDictionary.nbt,
+            displayName = item.displayName,
+            price = item.price,
+            meta = item.meta,
+            count = itemDictionary.count,
+            order = order,
+        })
     end
-    return selectMenu == "Yes"
+
+    for i, item in pairs(items) do
+        table.insert(itemDictionary, {
+            name = item.name,
+            nbt = item.nbt,
+            displayName = item.displayName,
+        })
+    end
+
+    local succ, obj = e.updateForSaleItems(itemsForSale)
+    if not succ then print(obj.error) sleep(3) end
+    succ, obj = e.updateItemDictionary(itemDictionary)
+    if not succ then print(obj.error) sleep(3) end
+end
+
+local function confirmChange(setting)
+    local selectMenuResult
+    if setting then
+        selectMenuResult = selectMenu({"Yes", "No"}, "Vital setting '".. setting .."' changed. Reboot?")
+    else
+        selectMenuResult = selectMenu({"Yes", "No"}, "Vital setting changed. Reboot?")
+    end
+    return selectMenuResult == "Yes"
 end
 
 local actions = {
@@ -1000,6 +955,7 @@ local actions = {
             local item = items[itemName]
             local info = form(formLayouts.newItem(item.displayName, item.name), "Adding new item: " .. item.displayName .. " ["..item.count.."]")
             config.forSale[itemName] = info
+            table.insert(config.forSaleOrder, itemName)
             saveConfig()
             term.clear()
             middle()
@@ -1058,6 +1014,13 @@ local actions = {
         if itemName ~= "Cancel" then
             local item = items[itemName]
             config.forSale[itemName] = nil
+            local newOrder = {}
+            for i,v in pairs(config.forSaleOrder)do
+                if v ~= itemName then
+                    table.insert(newOrder, v)
+                end
+            end
+            config.forSaleOrder = newOrder
             saveConfig()
             term.clear()
             middle()
@@ -1107,7 +1070,7 @@ local actions = {
 
                     if discordOption == "Edit CC:D Token" then
                         local token = form(formLayouts.settings.discord.token(), "Insert new CC:D Token")
-                        if #token.key > 0 and token.key ~= config.discord.key then
+                        if token.key and #token.key > 0 and token.key ~= config.discord.key then
                             if confirmChange("cc:d token") then
                                 config.discord.key = token.key
                                 saveConfig()
@@ -1119,7 +1082,7 @@ local actions = {
                         if type(config.discord.admin) == "string" then user = config.discord.admin end
 
                         local user = form(formLayouts.settings.discord.user(user), "Insert Discord user ID")
-                        if #user.admin > 0 and user.admin ~= config.discord.admin then
+                        if user.admin and #user.admin > 0 and user.admin ~= config.discord.admin then
                             config.discord.admin = user.admin
                             saveConfig()
                         end
@@ -1132,8 +1095,11 @@ local actions = {
                         end
 
                         local user = form(formLayouts.settings.discord.channel(guild, channel), "Insert Discord channel ID & guild ID")
-                        if #user.admin > 0 and user.admin ~= config.discord.admin then
-                            config.discord.admin = user.admin
+                        if user.channel and user.guild and #user.channel > 0 and #user.guild > 0 then
+                            config.discord.admin = {
+                                channel = user.channel,
+                                guild = user.guild,
+                            }
                             saveConfig()
                         end
                     else
@@ -1166,7 +1132,156 @@ local actions = {
         sleep(1)
         mon:drawItems()
     end,
+    viewShopInfo = function()
+        local w,h = term.getSize()
+        term.setBackgroundColor(colors.black)
+        term.clear()
+        term.setCursorPos(1,1)
+        
+        term.setBackgroundColor(colors.white)
+        term.setTextColor(colors.black)
+        term.clearLine()
+        drawCenter("Shop Information")
+
+        term.setCursorPos(1,h)
+        term.clearLine()
+        drawCenter("To exit, press enter")
+
+        term.setBackgroundColor(colors.black)
+        term.setTextColor(colors.white)
+        
+        term.setCursorPos(1,2)
+        local refunds,discordIntegration = "NO", "NO"
+        if PRIVATE_KEY ~= nil then refunds = "YES" end
+        if config.discord.admin and
+                (type(config.discord.admin) == "table" and config.discord.admin.channel and config.discord.admin.guild) or
+                (type(config.discord.admin) == "string" and #config.discord.admin > 10) then
+            discordIntegration = "YES"
+        end
+
+        print("Shop Name: " .. config.shop.name)
+        print("Shop Server: " .. config.shop.server)
+        print("URL: " .. appHTTP .. APP_DOMAIN .. "/" .. ID:lower())
+        print("Refunds/Change/Etc: " .. refunds)
+        print("Discord integration: " .. discordIntegration)
+        print("   Help: " .. appHTTP .. APP_DOMAIN .. "/discord")
+
+        sleep(1)
+        local e,key
+        repeat e,key = os.pullEvent("key") until key == keys.enter
+    end,
 }
+
+k.on("e_ready", function()
+    print("kStore API ready")
+
+    local success, obj = e.updateShopInfo(config.shop.name, config.shop.server, config.krist.name, config.krist.address, config.location.map, config.location.x, config.location.y, config.location.z)
+
+    if not success then print(obj.error) sleep(3) end
+
+    kstoreReady = true
+
+    mon:updateLoading("Connection made to kStore API!")
+end)
+
+k.on("k_ready", function()
+    local ok, me, err
+    print("Krist API ready")
+    local confirm = false
+    while true do
+        if PRIVATE_KEY then
+            print("Logging in to Krist")
+            mon:updateLoading("Logging in to Krist")
+            ok, me = k.login(PRIVATE_KEY, config.krist.kristWallet)
+            if not ok then error("error retrieving self: " .. me) end
+            print("Got Krist host account data!")
+            if me.isGuest then
+                mon:updateLoading("Logged in as a guest")
+                print("Logged in as GUEST")
+            else
+                mon:updateLoading("Logged in as "..me.address.address)
+                print("Logged in as " .. me.address.address .. " ("..me.address.balance..")")
+                config.krist.address = me.address.address
+            end
+        else
+            print("Logged in as GUEST")
+        end
+        if not config.krist.address or #config.krist.address == 0 then
+            confirm = true
+            local formData = form(formLayouts.settings.initialKristData(), "Krist private key *OR* address")
+            if formData.privateKey and #formData.privateKey > 0 then
+                local kristAddress = selectMenu({"KristWallet/KWallet","Raw"}, "KristWallet or raw wallet?") ~= "Raw"
+                config.krist.kristWallet = kristAddress
+                config.krist.privateKey = formData.privateKey
+                PRIVATE_KEY = formData.privateKey
+            elseif formData.address and #formData.address > 0 then
+                config.krist.address = formData.address
+            end
+            term.clear()
+            term.setCursorPos(1,1)
+        else
+            if confirm then
+                local correct = selectMenu({"Incorrect","Correct"}, "Is '" .. config.krist.address .. "' correct?") ~= "Incorrect"
+                if correct then
+                    saveConfig()
+                    break
+                else
+                    config.krist.address = ""
+                    config.krist.privateKey = ""
+                    PRIVATE_KEY = nil
+                end
+            else
+                saveConfig()
+                break
+            end
+        end
+    end
+    if not config.krist.name or #config.krist.name == 0 then
+        local names = k.address.names(config.krist.address)
+        if not names.ok then error("failed when retrieving names: " ..names.error) end
+
+        local selectList = {}
+        for i, name in pairs(names.names)do
+            table.insert(selectList, name.name..".kst")
+        end
+        local name = selectMenu(selectList, "Select the krist domain to use")
+        print("Selected " .. name .. " for shop use")
+        config.krist.name = name
+        saveConfig()
+    end
+    print("Subscribing to all transactions")
+    ok, err = k.subscribe("transactions")
+    if not ok then error("error subscribing to transactions: " .. err) end
+    print("Subscribed!")
+    kristReady = true
+
+    mon:updateLoading("Connection made to Krist!")
+end)
+
+k.on("ccd_ready", function()
+    print("CC:D API ready")
+    ccdReady = true
+
+    mon:updateLoading("Connection made to CC:D!")
+end)
+
+local function monitorRefresh()
+    print("Waiting for all connections before starting monitor draw...")
+    repeat sleep(0.25) until kstoreReady and kristReady and ((not d) or ccdReady)
+    
+    mon:firstDraw()
+    mon:drawHeader()
+    mon:drawFooter()
+
+    itemScan()
+    updateItems()
+
+    while true do
+        itemScan()
+        mon:drawItems()
+        sleep(10)
+    end
+end
 
 local function terminalRefresh()
     print("Waiting for all connections before starting terminal draw...")
@@ -1180,6 +1295,7 @@ local function terminalRefresh()
             "Edit Settings",
             "Refresh Item Cache",
             "Reset Item Cache",
+            "View Shop Info",
         }, config.shop.name .. " : Admin Panel")
 
         if selection == "Add an Item" then
@@ -1194,6 +1310,8 @@ local function terminalRefresh()
             actions.refreshCache(false)
         elseif selection == "Reset Item Cache" then
             actions.refreshCache(true)
+        elseif selection == "View Shop Info" then
+            actions.viewShopInfo()
         end
     end
 end
