@@ -134,6 +134,7 @@ app.use("/", require("./shop"));
 require("./controllers/")(app);
 
 app.use(express.static(__dirname + "/node_modules/bootstrap/dist"));
+app.use("/js", express.static(__dirname + "/node_modules/jquery/dist"));
 app.use(express.static("public", {extensions: ["html"]}));
 
 const server = app.listen(config.port);
